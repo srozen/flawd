@@ -1,0 +1,37 @@
+<idea-plugin>
+    <id>io.github.srozen.flawd</id>
+    <name>Flawd BPMN Editor</name>
+    <!-- vendor and change-notes are filled in from gradle.properties / CHANGELOG.md at build time -->
+
+    <description><![CDATA[
+    View and edit BPMN 2.0 process diagrams (<code>.bpmn</code>, <code>.bpmn2</code>, <code>*.bpmn20.xml</code>) right in the IDE.
+    <ul>
+      <li>Graphical modeler powered by <a href="https://bpmn.io">bpmn-js</a>, with a properties panel for IDs, names, conditions and documentation</li>
+      <li>Diagram, split and XML text views; edits in either view stay in sync</li>
+      <li>Diagram edits are regular IDE undo steps</li>
+      <li>Selecting an element in split view jumps to its XML</li>
+      <li>Follows the IDE light/dark theme; export diagrams as SVG</li>
+      <li><b>File | New | BPMN Diagram</b> to start a new process</li>
+    </ul>
+    <p>The diagram editor is built on bpmn-js by Camunda Services GmbH (bpmn.io).</p>
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.xml</depends>
+    <depends>com.intellij.modules.jcef</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- BPMN files are XML: reuse the XML file type for highlighting, folding and validation in the text view -->
+        <fileType name="XML" extensions="bpmn;bpmn2"/>
+        <fileEditorProvider implementation="dev.flawd.bpmn.BpmnEditorProvider"/>
+        <fileIconProvider implementation="dev.flawd.bpmn.BpmnFileIconProvider"/>
+        <internalFileTemplate name="BPMN Diagram"/>
+    </extensions>
+
+    <actions>
+        <action id="Bpmn.NewDiagram" class="dev.flawd.bpmn.NewBpmnFileAction"
+                text="BPMN Diagram" description="Create a new BPMN 2.0 process diagram" icon="/icons/bpmn.svg">
+            <add-to-group group-id="NewGroup" anchor="after" relative-to-action="NewFile"/>
+        </action>
+    </actions>
+</idea-plugin>

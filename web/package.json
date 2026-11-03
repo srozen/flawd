@@ -1,0 +1,16 @@
+{
+  "name": "bpmn-editor-web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "dependencies": {
+    "@bpmn-io/properties-panel": "3.58.1",
+    "bpmn-js": "18.31.1",
+    "bpmn-js-properties-panel": "5.65.3"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}

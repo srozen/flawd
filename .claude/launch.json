@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "bpmn-web-editor",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "5179", "--bind", "127.0.0.1", "--directory", "build/generated/web/bpmn-editor"],
+      "port": 5179
+    }
+  ]
+}

@@ -1,0 +1,144 @@
+:root {
+  --ide-background: #ffffff;
+  --ide-foreground: #1e1f22;
+  --ide-border: #ebecf0;
+  --ide-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif;
+}
+
+/* Dark palette: diagram-js and the properties panel read the --bio-* tokens, declared on .bio-theme-parent */
+:root.ide-dark,
+:root.ide-dark .bio-theme-parent {
+  --bio-surface: var(--ide-background);
+  --bio-surface-overlay: hsl(220, 4%, 22%);
+  --bio-surface-subtle: hsl(220, 4%, 19%);
+  --bio-surface-medium: hsl(220, 4%, 24%);
+  --bio-surface-strong: hsl(220, 4%, 30%);
+  --bio-surface-inverted: hsl(220, 6%, 85%);
+  --bio-surface-inverted-subtle: hsl(220, 4%, 65%);
+  --bio-text: var(--ide-foreground);
+  --bio-text-subtle: hsl(220, 6%, 70%);
+  --bio-text-subtlest: hsl(220, 5%, 55%);
+  --bio-text-on-inverted: hsl(220, 4%, 12%);
+  --bio-border: hsl(220, 4%, 36%);
+  --bio-border-subtle: hsl(220, 4%, 28%);
+  --bio-border-disabled: hsl(220, 4%, 26%);
+  --bio-border-input: hsl(220, 4%, 36%);
+  --bio-primary: hsl(213, 80%, 62%);
+  --bio-primary-hover: hsl(213, 80%, 68%);
+  --bio-primary-surface: hsl(213, 40%, 24%);
+  --bio-primary-surface-strong: hsl(213, 45%, 32%);
+  --bio-selected-surface: hsl(220, 4%, 28%);
+  --bio-focus: hsl(213, 80%, 62%);
+  --bio-focus-surface: hsl(213, 40%, 24%);
+  --bio-focus-ring: hsla(213, 80%, 62%, 0.4);
+  --bio-canvas-accent: hsl(213, 80%, 62%);
+  --bio-canvas-accent-subtle: hsl(213, 50%, 42%);
+  --bio-danger-surface: hsl(0, 40%, 22%);
+  --bio-danger-surface-subtle: hsl(0, 30%, 18%);
+  --bio-warning-surface: hsl(38, 35%, 20%);
+  --bio-warning-text: hsl(39, 90%, 65%);
+  --bio-shadow: hsla(0, 0%, 0%, 60%);
+  --bio-shadow-subtle: hsla(0, 0%, 0%, 35%);
+  color-scheme: dark;
+}
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--ide-background);
+  color: var(--ide-foreground);
+  font-family: var(--ide-font);
+}
+
+#app {
+  display: flex;
+  height: 100%;
+}
+
+#canvas {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  background: var(--ide-background);
+}
+
+#canvas:focus, #canvas .djs-container:focus, #canvas .djs-container svg:focus { outline: none; }
+
+#splitter {
+  flex: 0 0 4px;
+  cursor: col-resize;
+  background: var(--ide-border);
+}
+
+#properties {
+  flex: 0 0 auto;
+  width: 320px;
+  min-width: 200px;
+  max-width: 70vw;
+  height: 100%;
+  overflow: auto;
+  background: var(--bio-surface);
+}
+
+#app.no-properties #splitter,
+#app.no-properties #properties { display: none; }
+
+/* The palette and context pad default to light chrome; follow the IDE instead */
+.djs-palette {
+  background: var(--bio-surface-overlay);
+  border-color: var(--bio-border-subtle);
+}
+:root.ide-dark .djs-palette .entry,
+:root.ide-dark .djs-context-pad .entry { color: var(--bio-text); }
+:root.ide-dark .djs-context-pad .entry { background-color: var(--bio-surface-overlay); }
+:root.ide-dark .djs-direct-editing-parent { color: #1e1f22; }
+
+/*
+ * Overlays stay below z-index 100: the bpmn-js license requires the bpmn.io watermark
+ * (bottom-right of the canvas, z-index 100) to stay fully visible and never be overlapped.
+ */
+#error {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--ide-background) 75%, transparent);
+  z-index: 50;
+}
+#error[hidden] { display: none; }
+
+.error-card {
+  max-width: 520px;
+  margin: 16px;
+  padding: 16px 20px;
+  border: 1px solid var(--bio-danger, #d32f2f);
+  border-radius: 6px;
+  background: var(--ide-background);
+  box-shadow: 0 4px 16px var(--bio-shadow-subtle, rgba(0, 0, 0, .15));
+  font-size: 13px;
+}
+.error-card p { margin: 8px 0 0; line-height: 1.4; }
+.error-card #error-message {
+  font-family: ui-monospace, "JetBrains Mono", Menlo, monospace;
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.error-card .hint { color: var(--bio-text-subtle, #555); }
+
+#warnings {
+  position: fixed;
+  left: 80px;
+  top: 12px;
+  max-width: 50vw;
+  padding: 6px 10px;
+  border-radius: 4px;
+  background: var(--bio-warning-surface, #fff7e6);
+  color: var(--bio-warning-text, #8a5a00);
+  font-size: 12px;
+  cursor: pointer;
+  z-index: 50;
+}
+#warnings[hidden] { display: none; }

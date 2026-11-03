@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>BPMN Editor</title>
+  <!-- inline:css -->
+</head>
+<body>
+  <div id="app">
+    <div id="canvas"></div>
+    <div id="splitter" title="Drag to resize"></div>
+    <div id="properties"></div>
+  </div>
+  <div id="error" hidden>
+    <div class="error-card">
+      <strong>The diagram can't be shown</strong>
+      <p id="error-message"></p>
+      <p class="hint">Fix the XML in the text editor; the diagram updates as soon as it parses again.
+        Diagram editing is paused until then so your text isn't overwritten.</p>
+    </div>
+  </div>
+  <div id="warnings" hidden></div>
+  <!-- inline:js -->
+</body>
+</html>
