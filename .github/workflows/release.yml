@@ -1,0 +1,70 @@
+# Pushing a tag such as v0.2.0 (it must match pluginVersion in gradle.properties) tests and signs the plugin,
+# publishes it to JetBrains Marketplace when the PUBLISH_TOKEN secret exists, and creates a GitHub release
+# with the signed zip and that version's CHANGELOG.md notes.
+#
+# Required secrets: CERTIFICATE_CHAIN, PRIVATE_KEY, PRIVATE_KEY_PASSWORD.
+# Optional: PUBLISH_TOKEN. Leave it unset for the very first version, which has to be uploaded to the
+# Marketplace by hand; download the signed zip from the GitHub release for that.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      CERTIFICATE_CHAIN: ${{ secrets.CERTIFICATE_CHAIN }}
+      PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+      PRIVATE_KEY_PASSWORD: ${{ secrets.PRIVATE_KEY_PASSWORD }}
+      PUBLISH_TOKEN: ${{ secrets.PUBLISH_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Check the tag and signing secrets
+        id: version
+        run: |
+          version=$(sed -n 's/^pluginVersion *= *//p' gradle.properties)
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME doesn't match pluginVersion $version in gradle.properties"
+            exit 1
+          fi
+          if [ -z "$CERTIFICATE_CHAIN" ] || [ -z "$PRIVATE_KEY" ] || [ -z "$PRIVATE_KEY_PASSWORD" ]; then
+            echo "::error::Set the CERTIFICATE_CHAIN, PRIVATE_KEY and PRIVATE_KEY_PASSWORD repository secrets"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: zulu
+          java-version: 25
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - uses: gradle/actions/setup-gradle@v6
+
+      - name: Test, build and sign
+        run: ./gradlew test signPlugin verifyPluginSignature
+
+      - name: Publish to JetBrains Marketplace
+        if: env.PUBLISH_TOKEN != ''
+        run: ./gradlew publishPlugin
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          ./gradlew -q --console=plain getChangelog --project-version="$VERSION" --no-header --no-links > release-notes.md
+          prerelease=$([[ "$VERSION" == *-* ]] && echo --prerelease || true)
+          gh release create "$GITHUB_REF_NAME" build/distributions/*-signed.zip \
+            --title "$GITHUB_REF_NAME" --notes-file release-notes.md $prerelease

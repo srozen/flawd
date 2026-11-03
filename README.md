@@ -28,6 +28,7 @@ src/main/kotlin/dev/flawd/bpmn/
 src/main/resources/META-INF/plugin.xml
 samples/order-fulfillment.bpmn
 CHANGELOG.md               release notes; the current version's section becomes the Marketplace "What's New"
+.github/workflows/         Build (tests + Plugin Verifier) and Release (sign, publish, GitHub release)
 ```
 
 ## Building and running
@@ -66,42 +67,52 @@ to the console instead. When it runs inside the IDE, you can open DevTools from 
 2. **Vendor details:** `pluginVendorName`, `pluginVendorEmail` and `pluginVendorUrl` in `gradle.properties` must
    match your vendor profile on plugins.jetbrains.com. They're shown publicly, and `publishPlugin` refuses to run
    without an email or URL.
-3. **Signing certificate:** create it once and keep it safe. Every release must be signed with the same key.
+3. **Signing certificate:** every release must be signed with the same key, so back it up somewhere safe
+   (a password manager, for example). Never commit it. To create one:
 
    ```bash
-   openssl genpkey -aes-256-cbc -algorithm RSA -out private_encrypted.pem -pkeyopt rsa_keygen_bits:4096
-   openssl rsa -in private_encrypted.pem -out private.pem
-   openssl req -key private.pem -new -x509 -days 3650 -out chain.crt
+   mkdir -p ~/.config/flawd-signing && cd ~/.config/flawd-signing
+   openssl rand -base64 33 | tr -d '\n' > password.txt
+   openssl genpkey -aes-256-cbc -algorithm RSA -pkeyopt rsa_keygen_bits:4096 -out private_encrypted.pem -pass file:password.txt
+   openssl req -new -x509 -days 3650 -key private_encrypted.pem -passin file:password.txt -subj "/CN=Srozen" -out chain.crt
    ```
-
-   Never commit these files.
-4. **First upload, done by hand:** sign in at plugins.jetbrains.com, then build a signed zip:
+4. **GitHub secrets:** store the certificate for the Release workflow:
 
    ```bash
-   export CERTIFICATE_CHAIN="$(cat chain.crt)" PRIVATE_KEY="$(cat private_encrypted.pem)" PRIVATE_KEY_PASSWORD=...
-   ./gradlew signPlugin
+   cd ~/.config/flawd-signing
+   gh secret set CERTIFICATE_CHAIN --repo srozen/flawd < chain.crt
+   gh secret set PRIVATE_KEY --repo srozen/flawd < private_encrypted.pem
+   gh secret set PRIVATE_KEY_PASSWORD --repo srozen/flawd < password.txt
    ```
+5. **First release:** the Marketplace only accepts a new plugin's first version through its website. Push the
+   version tag (see below) with no `PUBLISH_TOKEN` secret set. The Release workflow then signs the plugin and
+   attaches `bpmn-editor-<version>-signed.zip` to a GitHub release. Upload that zip at plugins.jetbrains.com with
+   **Upload plugin**, choose the MIT license, set the source code URL to this repo, and add screenshots.
+   JetBrains reviews new plugins by hand before they're listed.
+6. **Publishing token:** once the plugin is approved, create a token under your Marketplace profile's
+   **My Tokens** and store it with `gh secret set PUBLISH_TOKEN --repo srozen/flawd`. Later releases then publish
+   automatically.
 
-   Upload `build/distributions/bpmn-editor-<version>-signed.zip` with **Upload plugin**, choose the MIT license,
-   and add screenshots. JetBrains reviews new plugins by hand before they're listed.
-5. **Publishing token:** create one under your Marketplace profile's **My Tokens** for the automated releases below.
+### Every release
 
-### Every later release
-
-1. Move the `[Unreleased]` notes in `CHANGELOG.md` under a new version heading and bump `pluginVersion`.
-   A pre-release version such as `0.2.0-beta.1` publishes to the `beta` channel instead of the default one.
-2. Run the checks. `verifyPlugin` runs JetBrains' Plugin Verifier against the recommended IDE versions, which
-   downloads several IDEs; add `-PverifyLocalIde=/path/to/IDE.app` to check against one installed IDE instead.
+1. Move the `[Unreleased]` notes in `CHANGELOG.md` under a new version heading and set `pluginVersion` in
+   `gradle.properties` to match. A pre-release version such as `0.2.0-beta.1` goes to the Marketplace `beta` channel
+   and becomes a GitHub pre-release.
+2. Commit, then tag and push. The tag must be `v` plus `pluginVersion`:
 
    ```bash
-   ./gradlew test verifyPlugin
+   git tag v0.2.0
+   git push origin main v0.2.0
    ```
-3. Publish. This runs the vendor check, builds, signs and uploads:
 
-   ```bash
-   export PUBLISH_TOKEN=... CERTIFICATE_CHAIN="$(cat chain.crt)" PRIVATE_KEY="$(cat private_encrypted.pem)" PRIVATE_KEY_PASSWORD=...
-   ./gradlew publishPlugin
-   ```
+   The **Release** workflow tests and signs the plugin, publishes it to the Marketplace if `PUBLISH_TOKEN` is set,
+   and creates a GitHub release with the signed zip and that version's changelog.
+
+The **Build** workflow runs the tests on every push and pull request, plus JetBrains' Plugin Verifier against the
+recommended IDE versions. To run the verifier locally against a single installed IDE, use
+`./gradlew verifyPlugin -PverifyLocalIde=/path/to/IDE.app`.
+
+To publish from your machine instead of CI, export the same four values and run `./gradlew publishPlugin`.
 
 ### Licensing
 
