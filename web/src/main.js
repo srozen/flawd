@@ -45,6 +45,25 @@ let lastXml = null;
 let importing = false;
 let broken = false;
 let changeTimer = null;
+/** A fit requested while the canvas had no size (e.g. the editor opened in text-only layout). */
+let pendingFit = false;
+/** XML that arrived while the canvas was hidden; bpmn-js can't render into a zero-sized container. */
+let deferredXml = null;
+
+let deferredTimer = null;
+
+const canvasHidden = () => !$('canvas').clientWidth || !$('canvas').clientHeight;
+
+/** Imports deferred XML as soon as the canvas has a size, however it became visible. */
+function importWhenVisible() {
+  if (deferredTimer) return;
+  deferredTimer = setInterval(() => {
+    if (canvasHidden()) return;
+    clearInterval(deferredTimer);
+    deferredTimer = null;
+    if (deferredXml !== null) importXml(deferredXml, { keepView: false, force: true });
+  }, 200);
+}
 
 function rendererColors() {
   return theme.dark
@@ -112,6 +131,13 @@ async function importXml(xml, { keepView = true, force = false } = {}) {
   changeTimer = null;
   lastXml = xml;
 
+  if (canvasHidden()) {
+    deferredXml = xml;
+    importWhenVisible();
+    return;
+  }
+  deferredXml = null;
+
   const canvas = modeler.get('canvas');
   const wasBroken = broken;
   let viewbox = null;
@@ -128,18 +154,26 @@ async function importXml(xml, { keepView = true, force = false } = {}) {
     broken = false;
     $('error').hidden = true;
     showWarnings(warnings);
+  } catch (e) {
+    broken = true;
+    $('warnings').hidden = true;
+    $('error-message').textContent = (e && e.message) || String(e);
+    $('error').hidden = false;
+    return;
+  } finally {
+    importing = false;
+  }
+
+  // Kept apart from the import: a view that can't be restored must not mark valid XML as broken
+  try {
     if (viewbox && viewbox.width > 0) {
       canvas.viewbox(viewbox);
     } else {
       fit();
     }
   } catch (e) {
-    broken = true;
-    $('warnings').hidden = true;
-    $('error-message').textContent = (e && e.message) || String(e);
-    $('error').hidden = false;
-  } finally {
-    importing = false;
+    send('log', 'Could not restore the diagram view: ' + (e && e.message));
+    pendingFit = true;
   }
 }
 
@@ -167,13 +201,38 @@ function applyTheme(next) {
 }
 
 function fit() {
+  // Zooming a zero-sized canvas produces non-finite transforms; fit once it's shown instead
+  if (canvasHidden()) {
+    pendingFit = true;
+    return;
+  }
+  pendingFit = false;
   const canvas = modeler.get('canvas');
   const root = canvas.getRootElement();
-  if (root && root.children && root.children.length) {
-    canvas.zoom('fit-viewport', 'auto');
-  } else {
+  if (!root || !root.children || !root.children.length) {
     canvas.zoom(1);
+    return;
   }
+
+  // Like zoom('fit-viewport'), but centered in the area right of the palette so it covers nothing
+  const MARGIN = 24;
+  const { inner } = canvas.viewbox();
+  const box = $('canvas').getBoundingClientRect();
+  const palette = document.querySelector('.djs-palette');
+  const left = (palette ? palette.getBoundingClientRect().right - box.left : 0) + MARGIN;
+  const availableWidth = box.width - left - MARGIN;
+  const availableHeight = box.height - 2 * MARGIN;
+  if (availableWidth <= 0 || availableHeight <= 0 || !inner.width || !inner.height) {
+    canvas.zoom('fit-viewport', 'auto');
+    return;
+  }
+  const scale = Math.min(1, availableWidth / inner.width, availableHeight / inner.height);
+  canvas.viewbox({
+    x: inner.x - (left + (availableWidth - inner.width * scale) / 2) / scale,
+    y: inner.y - (MARGIN + (availableHeight - inner.height * scale) / 2) / scale,
+    width: box.width / scale,
+    height: box.height / scale
+  });
 }
 
 function setupSplitter() {
@@ -194,7 +253,11 @@ function setupSplitter() {
   });
 
   // diagram-js caches the container size; tell it whenever the canvas area changes
-  new ResizeObserver(() => modeler && modeler.get('canvas').resized()).observe($('canvas'));
+  new ResizeObserver(() => {
+    if (!modeler || canvasHidden()) return;
+    modeler.get('canvas').resized();
+    if (pendingFit && deferredXml === null) fit();
+  }).observe($('canvas'));
 }
 
 window.addEventListener('error', e => send('log', `${e.message} (${e.filename}:${e.lineno})`));

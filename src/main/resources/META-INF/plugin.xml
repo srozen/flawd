@@ -25,6 +25,7 @@
         <fileType name="XML" extensions="bpmn;bpmn2"/>
         <fileEditorProvider implementation="dev.flawd.bpmn.BpmnEditorProvider"/>
         <fileIconProvider implementation="dev.flawd.bpmn.BpmnFileIconProvider"/>
+        <standardResourceProvider implementation="dev.flawd.bpmn.BpmnNamespaceProvider"/>
         <internalFileTemplate name="BPMN Diagram"/>
     </extensions>
 

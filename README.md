@@ -2,6 +2,8 @@
 
 Source: https://github.com/srozen/flawd
 
+![Diagram view](docs/screenshots/1-diagram-dark.png)
+
 An IntelliJ Platform plugin for viewing and editing BPMN 2.0 diagrams (`.bpmn`, `.bpmn2`, `*.bpmn20.xml`).
 The diagram is the [bpmn-js](https://bpmn.io) modeler running in the IDE's embedded Chromium (JCEF).
 

@@ -47,7 +47,7 @@ private val LOG = logger<BpmnDiagramEditor>()
  * commands (only the changed range is replaced); document edits made elsewhere (text editor, VCS,
  * external changes) are pushed to the diagram after a short debounce.
  */
-class BpmnDiagramEditor(private val project: Project, private val file: VirtualFile) : UserDataHolderBase(), FileEditor {
+class BpmnDiagramEditor(val project: Project, private val file: VirtualFile) : UserDataHolderBase(), FileEditor {
 
     var onUndoRedo: ((redo: Boolean) -> Unit)? = null
     var onElementSelected: ((id: String) -> Unit)? = null

@@ -1,6 +1,7 @@
 package dev.flawd.bpmn
 
 import com.intellij.ide.fileTemplates.FileTemplateManager
+import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.fileEditor.ex.FileEditorProviderManager
 import com.intellij.openapi.util.Disposer
@@ -33,6 +34,14 @@ class BpmnEditorTest : BasePlatformTestCase() {
             assertEquals(sample, (editor as BpmnSplitEditor).editor.document.text)
         } finally {
             Disposer.dispose(editor)
+        }
+    }
+
+    fun testSamplesHaveNoXmlErrorsOrWarnings() {
+        for (name in listOf("order-fulfillment.bpmn", "purchase-order-approval.bpmn")) {
+            myFixture.configureByText(name, File("src/test/testData/$name").readText())
+            val problems = myFixture.doHighlighting(HighlightSeverity.WARNING).map { "${it.severity}: ${it.description}" }
+            assertEmpty("$name: $problems", problems)
         }
     }
 

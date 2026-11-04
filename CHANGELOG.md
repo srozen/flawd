@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+## [0.1.1]
+
+### Added
+
+- Each file reopens in the Diagram, Split or Text layout it was left in
+
+### Fixed
+
+- BPMN files no longer show "URI is not registered" errors in the XML view
+- A diagram loaded while hidden (for example in Text layout) no longer shows a false "can't be shown" error
+- Fitting the diagram keeps it clear of the tool palette
+
 ## [0.1.0]
 
 ### Added

@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_PO" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:message id="Message_Request" name="Purchase request" />
+  <bpmn:process id="PurchaseOrderApproval" name="Purchase order approval" isExecutable="false">
+    <bpmn:startEvent id="RequestReceived" name="Purchase request received">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+      <bpmn:messageEventDefinition messageRef="Message_Request" />
+    </bpmn:startEvent>
+    <bpmn:userTask id="ReviewRequest" name="Review request">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="AmountCheck" name="Amount over 5,000?" default="Flow_Small">
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_Large</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Small</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="ManagerApproval" name="Manager approval">
+      <bpmn:incoming>Flow_Large</bpmn:incoming>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Approved" name="Approved?" default="Flow_Approved">
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+      <bpmn:outgoing>Flow_Approved</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Rejected</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sendTask id="NotifyRejection" name="Notify requester">
+      <bpmn:incoming>Flow_Rejected</bpmn:incoming>
+      <bpmn:outgoing>Flow_4</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:endEvent id="RequestRejected" name="Request rejected">
+      <bpmn:incoming>Flow_4</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:exclusiveGateway id="Merge">
+      <bpmn:incoming>Flow_Small</bpmn:incoming>
+      <bpmn:incoming>Flow_Approved</bpmn:incoming>
+      <bpmn:outgoing>Flow_5</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="CreatePO" name="Create purchase order in ERP">
+      <bpmn:incoming>Flow_5</bpmn:incoming>
+      <bpmn:outgoing>Flow_6</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:parallelGateway id="Split">
+      <bpmn:incoming>Flow_6</bpmn:incoming>
+      <bpmn:outgoing>Flow_7</bpmn:outgoing>
+      <bpmn:outgoing>Flow_8</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:sendTask id="SendToSupplier" name="Send order to supplier">
+      <bpmn:incoming>Flow_7</bpmn:incoming>
+      <bpmn:outgoing>Flow_9</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:serviceTask id="ReserveBudget" name="Reserve budget">
+      <bpmn:incoming>Flow_8</bpmn:incoming>
+      <bpmn:outgoing>Flow_10</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:parallelGateway id="Join">
+      <bpmn:incoming>Flow_9</bpmn:incoming>
+      <bpmn:incoming>Flow_10</bpmn:incoming>
+      <bpmn:outgoing>Flow_11</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:endEvent id="OrderPlaced" name="Order placed">
+      <bpmn:incoming>Flow_11</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="RequestReceived" targetRef="ReviewRequest" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="ReviewRequest" targetRef="AmountCheck" />
+    <bpmn:sequenceFlow id="Flow_Large" name="yes" sourceRef="AmountCheck" targetRef="ManagerApproval">
+      <bpmn:conditionExpression>amount &gt; 5000</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_Small" name="no" sourceRef="AmountCheck" targetRef="Merge" />
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="ManagerApproval" targetRef="Approved" />
+    <bpmn:sequenceFlow id="Flow_Approved" name="yes" sourceRef="Approved" targetRef="Merge" />
+    <bpmn:sequenceFlow id="Flow_Rejected" name="no" sourceRef="Approved" targetRef="NotifyRejection">
+      <bpmn:conditionExpression>!approved</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_4" sourceRef="NotifyRejection" targetRef="RequestRejected" />
+    <bpmn:sequenceFlow id="Flow_5" sourceRef="Merge" targetRef="CreatePO" />
+    <bpmn:sequenceFlow id="Flow_6" sourceRef="CreatePO" targetRef="Split" />
+    <bpmn:sequenceFlow id="Flow_7" sourceRef="Split" targetRef="SendToSupplier" />
+    <bpmn:sequenceFlow id="Flow_8" sourceRef="Split" targetRef="ReserveBudget" />
+    <bpmn:sequenceFlow id="Flow_9" sourceRef="SendToSupplier" targetRef="Join" />
+    <bpmn:sequenceFlow id="Flow_10" sourceRef="ReserveBudget" targetRef="Join" />
+    <bpmn:sequenceFlow id="Flow_11" sourceRef="Join" targetRef="OrderPlaced" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_PurchaseOrderApproval">
+    <bpmndi:BPMNPlane id="BPMNPlane_PurchaseOrderApproval" bpmnElement="PurchaseOrderApproval">
+      <bpmndi:BPMNShape id="RequestReceived_di" bpmnElement="RequestReceived">
+        <dc:Bounds x="57" y="52" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ReviewRequest_di" bpmnElement="ReviewRequest">
+        <dc:Bounds x="175" y="30" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="AmountCheck_di" bpmnElement="AmountCheck" isMarkerVisible="true">
+        <dc:Bounds x="350" y="45" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="330" y="12" width="90" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ManagerApproval_di" bpmnElement="ManagerApproval">
+        <dc:Bounds x="475" y="30" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Approved_di" bpmnElement="Approved" isMarkerVisible="true">
+        <dc:Bounds x="650" y="45" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="630" y="12" width="90" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Merge_di" bpmnElement="Merge" isMarkerVisible="true">
+        <dc:Bounds x="800" y="45" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="CreatePO_di" bpmnElement="CreatePO">
+        <dc:Bounds x="925" y="30" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Split_di" bpmnElement="Split">
+        <dc:Bounds x="1100" y="45" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SendToSupplier_di" bpmnElement="SendToSupplier">
+        <dc:Bounds x="1225" y="30" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Join_di" bpmnElement="Join">
+        <dc:Bounds x="1400" y="45" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="OrderPlaced_di" bpmnElement="OrderPlaced">
+        <dc:Bounds x="1557" y="52" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="NotifyRejection_di" bpmnElement="NotifyRejection">
+        <dc:Bounds x="775" y="170" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="RequestRejected_di" bpmnElement="RequestRejected">
+        <dc:Bounds x="957" y="192" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ReserveBudget_di" bpmnElement="ReserveBudget">
+        <dc:Bounds x="1225" y="170" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1">
+        <di:waypoint x="93" y="70" />
+        <di:waypoint x="175" y="70" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2">
+        <di:waypoint x="275" y="70" />
+        <di:waypoint x="350" y="70" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Large_di" bpmnElement="Flow_Large">
+        <di:waypoint x="400" y="70" />
+        <di:waypoint x="475" y="70" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Small_di" bpmnElement="Flow_Small">
+        <di:waypoint x="375" y="95" />
+        <di:waypoint x="375" y="140" />
+        <di:waypoint x="825" y="140" />
+        <di:waypoint x="825" y="95" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3">
+        <di:waypoint x="575" y="70" />
+        <di:waypoint x="650" y="70" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Approved_di" bpmnElement="Flow_Approved">
+        <di:waypoint x="700" y="70" />
+        <di:waypoint x="800" y="70" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Rejected_di" bpmnElement="Flow_Rejected">
+        <di:waypoint x="675" y="95" />
+        <di:waypoint x="675" y="210" />
+        <di:waypoint x="775" y="210" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_5_di" bpmnElement="Flow_5">
+        <di:waypoint x="850" y="70" />
+        <di:waypoint x="925" y="70" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_6_di" bpmnElement="Flow_6">
+        <di:waypoint x="1025" y="70" />
+        <di:waypoint x="1100" y="70" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_7_di" bpmnElement="Flow_7">
+        <di:waypoint x="1150" y="70" />
+        <di:waypoint x="1225" y="70" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_8_di" bpmnElement="Flow_8">
+        <di:waypoint x="1125" y="95" />
+        <di:waypoint x="1125" y="210" />
+        <di:waypoint x="1225" y="210" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_9_di" bpmnElement="Flow_9">
+        <di:waypoint x="1325" y="70" />
+        <di:waypoint x="1400" y="70" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_11_di" bpmnElement="Flow_11">
+        <di:waypoint x="1450" y="70" />
+        <di:waypoint x="1557" y="70" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_4_di" bpmnElement="Flow_4">
+        <di:waypoint x="875" y="210" />
+        <di:waypoint x="957" y="210" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_10_di" bpmnElement="Flow_10">
+        <di:waypoint x="1325" y="210" />
+        <di:waypoint x="1425" y="210" />
+        <di:waypoint x="1425" y="95" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

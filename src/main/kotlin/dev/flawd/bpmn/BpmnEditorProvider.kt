@@ -13,24 +13,35 @@ import com.intellij.openapi.fileEditor.FileEditorPolicy
 import com.intellij.openapi.fileEditor.FileEditorProvider
 import com.intellij.openapi.fileEditor.TextEditor
 import com.intellij.openapi.fileEditor.TextEditorWithPreview
-import com.intellij.openapi.fileEditor.impl.text.TextEditorProvider
+import com.intellij.openapi.fileEditor.TextEditorWithPreviewProvider
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.project.DumbAwareToggleAction
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 
-class BpmnEditorProvider : FileEditorProvider, DumbAware {
+/**
+ * Opens BPMN files in the split editor. The base provider also saves each file's Diagram/Split/Text choice
+ * (and both editors' state) in the workspace, so a file reopens the way it was left.
+ */
+class BpmnEditorProvider : TextEditorWithPreviewProvider(BpmnDiagramEditorProvider()) {
+    override fun accept(project: Project, file: VirtualFile): Boolean = BpmnFiles.isBpmn(file)
+
+    override fun createSplitEditor(firstEditor: TextEditor, secondEditor: FileEditor): FileEditor {
+        val diagram = secondEditor as BpmnDiagramEditor
+        return BpmnSplitEditor(diagram.project, firstEditor, diagram)
+    }
+}
+
+/** The diagram half of the split editor; only used through [BpmnEditorProvider], so it isn't registered itself. */
+class BpmnDiagramEditorProvider : FileEditorProvider, DumbAware {
     override fun accept(project: Project, file: VirtualFile): Boolean = BpmnFiles.isBpmn(file)
 
     override fun acceptRequiresReadAction(): Boolean = false
 
-    override fun createEditor(project: Project, file: VirtualFile): FileEditor {
-        val textEditor = TextEditorProvider.getInstance().createEditor(project, file) as TextEditor
-        return BpmnSplitEditor(project, textEditor, BpmnDiagramEditor(project, file))
-    }
+    override fun createEditor(project: Project, file: VirtualFile): FileEditor = BpmnDiagramEditor(project, file)
 
-    override fun getEditorTypeId(): String = "bpmn-split-editor"
+    override fun getEditorTypeId(): String = "bpmn-diagram"
 
     override fun getPolicy(): FileEditorPolicy = FileEditorPolicy.HIDE_DEFAULT_EDITOR
 }
