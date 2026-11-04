@@ -7,3 +7,6 @@ out/
 web/node_modules/
 web/dist/
 .intellijPlatform/
+
+# macOS Finder metadata
+.DS_Store

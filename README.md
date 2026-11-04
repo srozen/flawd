@@ -1,144 +1,102 @@
+<div align="center">
+
+<img src="src/main/resources/META-INF/pluginIcon.svg" width="88" height="88" alt="">
+
 # Flawd BPMN Editor
 
-Source: https://github.com/srozen/flawd
+**View and edit BPMN 2.0 process diagrams without leaving your JetBrains IDE.**
 
-![Diagram view](docs/screenshots/1-diagram-dark.png)
+[![JetBrains Marketplace](https://img.shields.io/jetbrains/plugin/v/35780?label=Marketplace&logo=jetbrains&color=3592C4)](https://plugins.jetbrains.com/plugin/35780-flawd-bpmn-editor)
+[![Downloads](https://img.shields.io/jetbrains/plugin/d/35780?color=3592C4)](https://plugins.jetbrains.com/plugin/35780-flawd-bpmn-editor)
+[![Build](https://github.com/srozen/flawd/actions/workflows/build.yml/badge.svg)](https://github.com/srozen/flawd/actions/workflows/build.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-An IntelliJ Platform plugin for viewing and editing BPMN 2.0 diagrams (`.bpmn`, `.bpmn2`, `*.bpmn20.xml`).
-The diagram is the [bpmn-js](https://bpmn.io) modeler running in the IDE's embedded Chromium (JCEF).
+[Install](#installation) · [Features](#features) · [Usage](#usage) · [Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
 
-- **Diagram / Split / Text** views (toolbar toggle at the top right of the editor), like the Markdown editor
-- **Two-way sync**: diagram edits are written into the XML document, and text edits re-render the diagram
-- **Properties panel** for names, IDs, conditions, documentation and so on (toggle in the editor toolbar)
-- **IDE undo/redo** covers diagram edits. Each diagram change is one undoable command, and only the changed range of the XML is replaced.
-- In split view, selecting an element moves the text caret to its XML
-- Follows the IDE's light/dark theme; **Export as SVG** from the editor toolbar
-- **File | New | BPMN Diagram** creates a starter process
+</div>
 
-## Project layout
+![A purchase order process in the Flawd BPMN Editor diagram view, dark theme](docs/screenshots/1-diagram-dark.png)
 
-```
-build.gradle.kts           IntelliJ Platform Gradle Plugin 2.x build; also runs the web build
-web/                       bpmn-js editor page (esbuild bundles it into one self-contained index.html)
-  src/main.js              modeler setup + the JS side of the IDE bridge
-  src/editor.css           layout and the dark theme (overrides bpmn-io's --bio-* tokens)
-src/main/kotlin/dev/flawd/bpmn/
-  BpmnEditorProvider.kt    file editor provider, split editor, toolbar actions, settings
-  BpmnDiagramEditor.kt     JCEF browser, document <-> diagram sync, theme, SVG export
-  BpmnFiles.kt             which files are BPMN, file icon
-  NewBpmnFileAction.kt     File | New | BPMN Diagram
-src/main/resources/META-INF/plugin.xml
-samples/order-fulfillment.bpmn
-CHANGELOG.md               release notes; the current version's section becomes the Marketplace "What's New"
-.github/workflows/         Build (tests + Plugin Verifier) and Release (sign, publish, GitHub release)
-```
+Flawd BPMN Editor opens `.bpmn` files in a full graphical modeler, built on [bpmn-js](https://bpmn.io), with the XML
+always one click away. The diagram and the text stay in sync both ways, and every change is a normal IDE edit you can
+undo, diff and commit.
 
-## Building and running
+## Features
 
-Requirements: JDK 25 (the JBR bundled with IntelliJ 2026.2 works) and Node.js/npm (for the web bundle).
+- **A real BPMN modeler:** create and connect events, tasks, gateways, pools and lanes from the palette, then rename
+  them in place.
+- **Diagram, Split and Text views:** switch from the editor toolbar, like the Markdown editor. Each file reopens in the
+  view you left it in.
+- **Two-way sync:** edit the diagram and the XML updates; edit the XML and the diagram follows. Only the changed part
+  of the file is rewritten, so diffs stay small.
+- **One undo history:** diagram edits are regular IDE undo steps, mixed in order with your text edits.
+- **Properties panel:** set IDs, names, conditions and documentation without touching the XML.
+- **Jump to the XML:** in Split view, selecting an element moves the text cursor to its definition.
+- **Follows your theme:** light and dark themes are both supported, and switch with the IDE.
+- **Safe with broken XML:** if the file doesn't parse, the diagram shows the error and locks until the XML is valid
+  again, so it can never overwrite what you're typing.
+- **Export as SVG**, and **File | New | BPMN Diagram** to start a process from a template.
 
-```bash
-./gradlew runIde          # start a sandbox IDE with the plugin installed
-./gradlew buildPlugin     # build/distributions/bpmn-editor-<version>.zip, installable via Settings | Plugins | Install from Disk
-./gradlew test
-```
+### Diagram and XML side by side
 
-By default Gradle downloads IntelliJ IDEA `platformVersion` (see `gradle.properties`). To build against an
-installed IDE instead, which is much faster, add this to `~/.gradle/gradle.properties`:
+![Split view with the BPMN XML on the left and the rendered diagram on the right](docs/screenshots/2-split-view.png)
 
-```properties
-platformLocalPath=/Users/you/Applications/IntelliJ IDEA.app
-```
+### Light theme and properties panel
 
-If Gradle can't find `npm` (e.g. when it runs from inside the IDE without your shell's PATH), set
-`npmCommand=/absolute/path/to/npm` the same way.
+![Diagram view in the light theme with the element properties panel open](docs/screenshots/3-light-theme-properties.png)
 
-### Working on the web editor
+## Installation
 
-`./gradlew buildWeb` writes `build/generated/web/bpmn-editor/index.html`. The page works in a normal browser too:
-serve that folder and call `bpmnEditor.init({ xml })` from the console. Messages that would go to the IDE are logged
-to the console instead. When it runs inside the IDE, you can open DevTools from the browser's context menu if
-`ide.browser.jcef.contextMenu.devTools.enabled` is turned on in the Registry.
+**From the IDE:** open **Settings | Plugins | Marketplace**, search for **Flawd BPMN Editor**, click **Install** and
+restart if prompted.
 
-## Publishing to JetBrains Marketplace
+**From the web:** use **Install to IDE** on the
+[Marketplace page](https://plugins.jetbrains.com/plugin/35780-flawd-bpmn-editor).
 
-### Before the first release
+**From a file:** download `bpmn-editor-<version>-signed.zip` from the
+[GitHub releases](https://github.com/srozen/flawd/releases), then choose **Settings | Plugins | ⚙ | Install Plugin
+from Disk**.
 
-1. **Name and ID:** the plugin is "Flawd BPMN Editor" with ID `io.github.srozen.flawd` (`<id>` in `plugin.xml`).
-   The ID can never change once published. The Kotlin package `dev.flawd.bpmn` is independent of it.
-2. **Vendor details:** `pluginVendorName`, `pluginVendorEmail` and `pluginVendorUrl` in `gradle.properties` must
-   match your vendor profile on plugins.jetbrains.com. They're shown publicly, and `publishPlugin` refuses to run
-   without an email or URL.
-3. **Signing certificate:** every release must be signed with the same key, so back it up somewhere safe
-   (a password manager, for example). Never commit it. To create one:
+### Compatibility
 
-   ```bash
-   mkdir -p ~/.config/flawd-signing && cd ~/.config/flawd-signing
-   openssl rand -base64 33 | tr -d '\n' > password.txt
-   openssl genpkey -aes-256-cbc -algorithm RSA -pkeyopt rsa_keygen_bits:4096 -out private_encrypted.pem -pass file:password.txt
-   openssl req -new -x509 -days 3650 -key private_encrypted.pem -passin file:password.txt -subj "/CN=Srozen" -out chain.crt
-   ```
-4. **GitHub secrets:** store the certificate for the Release workflow:
-
-   ```bash
-   cd ~/.config/flawd-signing
-   gh secret set CERTIFICATE_CHAIN --repo srozen/flawd < chain.crt
-   gh secret set PRIVATE_KEY --repo srozen/flawd < private_encrypted.pem
-   gh secret set PRIVATE_KEY_PASSWORD --repo srozen/flawd < password.txt
-   ```
-5. **First release:** the Marketplace only accepts a new plugin's first version through its website. Push the
-   version tag (see below) with no `PUBLISH_TOKEN` secret set. The Release workflow then signs the plugin and
-   attaches `bpmn-editor-<version>-signed.zip` to a GitHub release. Upload that zip at plugins.jetbrains.com with
-   **Upload plugin**, choose the MIT license, set the source code URL to this repo, and add screenshots.
-   JetBrains reviews new plugins by hand before they're listed.
-6. **Publishing token:** once the plugin is approved, create a token under your Marketplace profile's
-   **My Tokens** and store it with `gh secret set PUBLISH_TOKEN --repo srozen/flawd`. Later releases then publish
-   automatically.
-
-### Every release
-
-1. Move the `[Unreleased]` notes in `CHANGELOG.md` under a new version heading and set `pluginVersion` in
-   `gradle.properties` to match. A pre-release version such as `0.2.0-beta.1` goes to the Marketplace `beta` channel
-   and becomes a GitHub pre-release.
-2. Commit, then tag and push. The tag must be `v` plus `pluginVersion`:
-
-   ```bash
-   git tag v0.2.0
-   git push origin main v0.2.0
-   ```
-
-   The **Release** workflow tests and signs the plugin, publishes it to the Marketplace if `PUBLISH_TOKEN` is set,
-   and creates a GitHub release with the signed zip and that version's changelog.
-
-The **Build** workflow runs the tests on every push and pull request, plus JetBrains' Plugin Verifier against the
-recommended IDE versions. To run the verifier locally against a single installed IDE, use
-`./gradlew verifyPlugin -PverifyLocalIde=/path/to/IDE.app`.
-
-To publish from your machine instead of CI, export the same four values and run `./gradlew publishPlugin`.
-
-### Licensing
-
-The plugin is MIT licensed (`LICENSE`, also bundled as `META-INF/LICENSE`). The web build generates
-`THIRD-PARTY-NOTICES.txt` from every npm package that ends up in the bundle and ships it inside the plugin.
-bpmn-js's license additionally requires the **bpmn.io watermark** on the canvas to stay fully visible and never
-overlapped, so keep any new overlay below its `z-index` of 100 (see the note in `web/src/editor.css`).
-
-## How the sync works
-
-The XML document is the source of truth.
-
-| Direction | Mechanism |
+| Requirement | Supported |
 |---|---|
-| IDE → diagram | A document listener debounces for 250 ms, then calls `bpmnEditor.importXml(xml)`. The viewport is preserved. |
-| diagram → IDE | `commandStack.changed` is debounced for 120 ms, then `saveXML` runs and the result goes through `JBCefJSQuery` (`changed\n<xml>`). The IDE applies it in a `WriteCommandAction` that replaces only the differing range. |
-| undo/redo | bpmn-js's undo/redo actions are rerouted to the IDE's `UndoManager`, which reverts the document; the diagram then re-imports it. |
-| invalid XML | The diagram shows the parse error and is locked, so it can't overwrite your text, until the XML parses again. |
+| IDE versions | 2026.2 or later |
+| IDEs | IntelliJ IDEA and other JetBrains IDEs that include XML support |
+| Files | `.bpmn`, `.bpmn2` and `*.bpmn20.xml` (the Flowable and Activiti naming convention) |
+
+## Usage
+
+1. Open any BPMN file. It opens in Diagram view.
+2. Drag elements from the palette on the left, and use the small menu that appears next to a selected element to
+   append and connect the next step.
+3. Use the buttons at the top right of the editor to switch between **Diagram**, **Split** and **Text**.
+4. Use the editor toolbar to **fit the diagram** to the window, **show or hide the properties panel**, or
+   **export as SVG**.
+5. Undo and redo work as usual (<kbd>⌘Z</kbd> / <kbd>Ctrl+Z</kbd>), whether the last change was made in the
+   diagram or in the text.
+
+To start a new process, right-click a folder and choose **New | BPMN Diagram**.
 
 ## Known limitations
 
-- The first diagram edit re-serializes the whole file the way bpmn-js formats it (attribute order, indentation),
-  so files written by other tools get a one-time formatting diff.
-- Vendor extensions (Camunda, Flowable, Zeebe) round-trip as unknown XML. Their dedicated properties aren't shown
-  in the panel. Adding `camunda-bpmn-moddle` or `zeebe-bpmn-moddle` plus the matching properties providers in
-  `web/src/main.js` would add them.
-- It needs an IDE runtime with JCEF; without JCEF only the text view is available.
+- **One-time reformatting:** the first diagram edit rewrites the file in bpmn-js's formatting (attribute order and
+  indentation). Files created by other tools get a one-time formatting diff; later edits only touch what changed.
+- **Vendor extensions:** Camunda, Flowable and Zeebe extension attributes are kept in the XML, but the properties panel
+  doesn't show or edit them yet.
+- **No schema validation:** the XML view knows the BPMN namespaces but doesn't validate against the BPMN XSDs.
+
+Found a bug or missing a feature? [Open an issue](https://github.com/srozen/flawd/issues).
+
+## Contributing
+
+Contributions are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) covers building and running the plugin, how the editor
+works, and the project layout. [docs/RELEASING.md](docs/RELEASING.md) covers how releases are signed and published.
+
+## License
+
+[MIT](LICENSE) © 2026 Samuel Monroe
+
+The diagram editor is built on [bpmn-js](https://bpmn.io) by Camunda Services GmbH, which is distributed under its own
+license; that license requires the bpmn.io watermark to remain visible on the canvas. The plugin ships the licenses of
+all bundled open source packages in `THIRD-PARTY-NOTICES.txt`.
